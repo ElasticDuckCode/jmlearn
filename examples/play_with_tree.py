@@ -8,6 +8,7 @@ from sklearn.datasets import load_iris
 
 from jmlearn.tree import BinaryNode, DecisionTree, view_tree
 
+
 def main():
     
     iris = load_iris()

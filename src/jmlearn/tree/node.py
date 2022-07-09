@@ -18,7 +18,6 @@ class BinaryNode:
         dot = view_tree(self)
         return dot
         
-        
 
 def view_tree(root):
     
