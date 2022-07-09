@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import stats
 from .node import BinaryNode
 
 
@@ -27,9 +28,53 @@ def split(data, labels, attribute, threshold):
     return (data_a, labels_a), (data_b, labels_b)
 
 
+def entropy(data, labels):
+    p = class_probabilities(data, labels)
+    return stats.entropy(p)
+
+
 def gini_impurity(data, labels):
     p = class_probabilities(data, labels)
     return 1 - p @ p
+
+
+# TODO: move splits to single function, and just change out the measure that is used.
+
+
+def information_gain_split(data, labels):
+    """Split dataset according to largest information gain
+    https://en.wikipedia.org/wiki/Decision_tree_learning
+    """
+
+    n_points = data.shape[0]
+    partions = get_partitions(data)
+    scores = np.zeros_like(partions)
+    i_curr = entropy(data, labels)
+    
+    def score_partiton(data, labels, i_curr, attribute, thresh):
+        group_a, group_b = split(data, labels, attribute, thresh)
+        data_a, labels_a = group_a
+        data_b, labels_b = group_b
+
+        # calculate entropy of left and right
+        i_a = entropy(data_a, labels_a)
+        i_b = entropy(data_b, labels_b)
+
+        # calculate relative frequency of left or right
+        p_l = data_a.shape[0] / n_points
+        p_r = data_b.shape[0] / n_points
+        
+        # C4_5 objective, maximize information gain
+        # Information_Gain(t_parent) = Entropy(t_parent) - E[Entropy(t_child)] 
+        return i_curr - p_l * i_a - p_r * i_b
+
+    for idx, thresh in np.ndenumerate(partions):
+        scores[idx] = score_partiton(data, labels, i_curr, idx[1], thresh)
+        
+    idx = np.unravel_index(scores.argmax(), scores.shape)
+    thresh = partions[idx]
+    return *split(data, labels, idx[1], thresh), idx[1], thresh
+    pass
 
 
 def gini_split(data, labels):
@@ -89,9 +134,32 @@ def CART(data, labels, height=20):
     return node
 
 
+def C4_5(data, labels, height=20):
+
+    # check our stopping criteria
+    classes = np.unique(labels)
+
+    if len(classes) == 1: # if all classes same, we can make decision
+        node = BinaryNode(classes[0])
+
+    elif height <= 0: # max tree height, decide class who is most frequent
+        p = class_probabilities(data, labels)
+        node = BinaryNode(classes[p.argmax()])
+        
+    # Split dataset according to Information Gain (C4.5 Algorithm)
+    else:
+        group_a, group_b, attribute, thresh = information_gain_split(data, labels)
+        node = BinaryNode((attribute, thresh))
+        node.left = C4_5(*group_a, height=height-1)
+        node.right = C4_5(*group_b, height=height-1)
+
+    return node
+
+
 class DecisionTree:
     classification_algos = {
-        'CART': CART
+        'CART': CART,
+        'C4.5': C4_5
     }
     
     def __init__(self, mode='classification', algo='CART'):
