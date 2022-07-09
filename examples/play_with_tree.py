@@ -6,7 +6,7 @@ def main():
     root.left = BinaryNode(1)
     root.right = BinaryNode((2,3))
     
-    dot = view_tree(root)
+    dot = root.view_tree()
     dot.render(directory='/tmp')
     return
 

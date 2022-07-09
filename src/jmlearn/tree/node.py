@@ -15,7 +15,8 @@ class BinaryNode:
         self.value = value
         
     def view_tree(self):
-        view_tree(self)
+        dot = view_tree(self)
+        return dot
         
         
 
