@@ -1,5 +1,4 @@
 # jmlearn
-
 This is a personal learning library to exercise my understanding of different concepts 
 in ML. This is not directed towards any use in real applications, but rather is my 
 own little playground.
