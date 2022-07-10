@@ -23,7 +23,7 @@ def main():
     labels = labels[50:]
     
     print("Training Jake's Decision Tree...", end='', flush=True)
-    dt = DecisionTree(algo='C4.5')
+    dt = DecisionTree()
     st = time.process_time()
     dt.fit(data, labels, height=3)
     et = time.process_time()
@@ -33,7 +33,7 @@ def main():
     dot.render(directory='/tmp/jmlearn')
     
     print("Training Scikit's Decision Tree...", end='', flush=True)
-    skdt = tree.DecisionTreeClassifier(criterion='entropy', max_depth=3)
+    skdt = tree.DecisionTreeClassifier(max_depth=3)
     st = time.process_time()
     skdt = skdt.fit(data, labels)
     et = time.process_time()
