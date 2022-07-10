@@ -39,7 +39,7 @@ def gini_impurity(data, labels):
 
 
 # TODO: move splits to single function, and just change out the measure that is used.
-def score_partiton(data, labels, attribute, thresh, measure):
+def score_partiton(attribute, thresh, data, labels, measure):
     n_points = data.shape[0]
     i_curr = measure(data, labels)
     group_a, group_b = split(data, labels, attribute, thresh)
@@ -60,12 +60,11 @@ def information_gain_split(data, labels):
     """Split dataset according to largest information gain
     https://en.wikipedia.org/wiki/Decision_tree_learning
     """
-
     partions = get_partitions(data)
     scores = np.zeros_like(partions)
 
     for idx, thresh in np.ndenumerate(partions):
-        scores[idx] = score_partiton(data, labels, idx[1], thresh, entropy)
+        scores[idx] = score_partiton(idx[1], thresh, data, labels, entropy)
         
     idx = np.unravel_index(scores.argmax(), scores.shape)
     thresh = partions[idx]
@@ -77,13 +76,12 @@ def gini_split(data, labels):
     """Split dataset according to largest change in Gini Impurity
     https://en.wikipedia.org/wiki/Decision_tree_learning
     """
-
     partions = get_partitions(data)
     scores = np.zeros_like(partions)
-    
-    for idx, thresh in np.ndenumerate(partions):
-        scores[idx] = score_partiton(data, labels, idx[1], thresh, gini_impurity)
         
+    for idx, thresh in np.ndenumerate(partions):
+        scores[idx] = score_partiton(idx[1], thresh, data, labels, gini_impurity)
+
     idx = np.unravel_index(scores.argmax(), scores.shape)
     thresh = partions[idx]
     return *split(data, labels, idx[1], thresh), idx[1], thresh
@@ -167,4 +165,3 @@ class DecisionTree:
                     current_node = current_node.right
             predicted_class.append(current_node.value)
         return np.asarray(predicted_class)
-
