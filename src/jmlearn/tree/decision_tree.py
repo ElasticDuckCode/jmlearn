@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import stats
 from .node import BinaryNode
+from multiprocessing import Pool
 
 
 def class_probabilities(data, labels):
@@ -21,8 +22,8 @@ def get_partitions(data):
 
 
 def split(data, labels, attribute, threshold):
-    group_a = np.where(data[:, attribute] <= threshold)
-    group_b = np.where(data[:, attribute] > threshold)
+    group_a = data[:, attribute] <= threshold
+    group_b = np.invert(group_a)
     data_a, labels_a = data[group_a], labels[group_a]
     data_b, labels_b = data[group_b], labels[group_b]
     return (data_a, labels_a), (data_b, labels_b)
@@ -39,6 +40,21 @@ def gini_impurity(data, labels):
 
 
 # TODO: move splits to single function, and just change out the measure that is used.
+def score_partiton(data, labels, attribute, thresh, measure):
+    n_points = data.shape[0]
+    i_curr = measure(data, labels)
+    group_a, group_b = split(data, labels, attribute, thresh)
+    data_a, labels_a = group_a
+    data_b, labels_b = group_b
+
+    i_a = measure(data_a, labels_a)
+    i_b = measure(data_b, labels_b)
+
+    # calculate relative frequency of left or right
+    p_l = data_a.shape[0] / n_points
+    p_r = data_b.shape[0] / n_points
+    
+    return i_curr - p_l * i_a - p_r * i_b
 
 
 def information_gain_split(data, labels):
@@ -46,30 +62,11 @@ def information_gain_split(data, labels):
     https://en.wikipedia.org/wiki/Decision_tree_learning
     """
 
-    n_points = data.shape[0]
     partions = get_partitions(data)
     scores = np.zeros_like(partions)
-    i_curr = entropy(data, labels)
-    
-    def score_partiton(data, labels, i_curr, attribute, thresh):
-        group_a, group_b = split(data, labels, attribute, thresh)
-        data_a, labels_a = group_a
-        data_b, labels_b = group_b
-
-        # calculate entropy of left and right
-        i_a = entropy(data_a, labels_a)
-        i_b = entropy(data_b, labels_b)
-
-        # calculate relative frequency of left or right
-        p_l = data_a.shape[0] / n_points
-        p_r = data_b.shape[0] / n_points
-        
-        # C4_5 objective, maximize information gain
-        # Information_Gain(t_parent) = Entropy(t_parent) - E[Entropy(t_child)] 
-        return i_curr - p_l * i_a - p_r * i_b
 
     for idx, thresh in np.ndenumerate(partions):
-        scores[idx] = score_partiton(data, labels, i_curr, idx[1], thresh)
+        scores[idx] = score_partiton(data, labels, idx[1], thresh, entropy)
         
     idx = np.unravel_index(scores.argmax(), scores.shape)
     thresh = partions[idx]
@@ -82,30 +79,11 @@ def gini_split(data, labels):
     https://en.wikipedia.org/wiki/Decision_tree_learning
     """
 
-    n_points = data.shape[0]
     partions = get_partitions(data)
     scores = np.zeros_like(partions)
-    i_curr = gini_impurity(data, labels)
     
-    def score_partiton(data, labels, i_curr, attribute, thresh):
-        group_a, group_b = split(data, labels, attribute, thresh)
-        data_a, labels_a = group_a
-        data_b, labels_b = group_b
-
-        # calculate gini impurity of left and right
-        i_a = gini_impurity(data_a, labels_a)
-        i_b = gini_impurity(data_b, labels_b)
-
-        # calculate relative frequency of left or right
-        p_l = data_a.shape[0] / n_points
-        p_r = data_b.shape[0] / n_points
-        
-        # CART objective, maximize change in impurity
-        # d_impurity(t_parent) = impurity(t_parent) - E[impurity(t_child)] 
-        return i_curr - p_l * i_a - p_r * i_b
-
     for idx, thresh in np.ndenumerate(partions):
-        scores[idx] = score_partiton(data, labels, i_curr, idx[1], thresh)
+        scores[idx] = score_partiton(data, labels, idx[1], thresh, gini_impurity)
         
     idx = np.unravel_index(scores.argmax(), scores.shape)
     thresh = partions[idx]
