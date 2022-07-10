@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import stats
 from .node import BinaryNode
-from multiprocessing import Pool
 
 
 def class_probabilities(data, labels):
