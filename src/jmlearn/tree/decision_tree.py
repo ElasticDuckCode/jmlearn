@@ -69,7 +69,6 @@ def information_gain_split(data, labels):
     idx = np.unravel_index(scores.argmax(), scores.shape)
     thresh = partions[idx]
     return *split(data, labels, idx[1], thresh), idx[1], thresh
-    pass
 
 
 def gini_split(data, labels):
