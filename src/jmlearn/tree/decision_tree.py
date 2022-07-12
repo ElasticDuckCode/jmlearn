@@ -13,9 +13,8 @@ def class_probabilities(data, labels):
     return p
 
 
-def get_partitions(data): 
-    """Split data examples by their midpoints for each feature.
-    """
+def get_partitions(data):
+    """Split data examples by their midpoints for each feature."""
     sort = np.sort(data, axis=0)
     return (sort[:-1] + sort[1:]) / 2
 
@@ -52,7 +51,7 @@ def score_partiton(attribute, thresh, data, labels, measure):
     # calculate relative frequency of left or right
     p_l = data_a.shape[0] / n_points
     p_r = data_b.shape[0] / n_points
-    
+
     return i_curr - p_l * i_a - p_r * i_b
 
 
@@ -65,7 +64,7 @@ def information_gain_split(data, labels):
 
     for idx, thresh in np.ndenumerate(partions):
         scores[idx] = score_partiton(idx[1], thresh, data, labels, entropy)
-        
+
     idx = np.unravel_index(scores.argmax(), scores.shape)
     thresh = partions[idx]
     return *split(data, labels, idx[1], thresh), idx[1], thresh
@@ -77,7 +76,7 @@ def gini_split(data, labels):
     """
     partions = get_partitions(data)
     scores = np.zeros_like(partions)
-        
+
     for idx, thresh in np.ndenumerate(partions):
         scores[idx] = score_partiton(idx[1], thresh, data, labels, gini_impurity)
 
@@ -91,19 +90,19 @@ def CART(data, labels, height=20):
     # check our stopping criteria
     classes = np.unique(labels)
 
-    if len(classes) == 1: # if all classes same, we can make decision
+    if len(classes) == 1:  # if all classes same, we can make decision
         node = BinaryNode(classes[0])
 
-    elif height <= 0: # max tree height, decide class who is most frequent
+    elif height <= 0:  # max tree height, decide class who is most frequent
         p = class_probabilities(data, labels)
         node = BinaryNode(classes[p.argmax()])
-        
+
     # Split dataset according to Gini Splitting Rule (CART Algorithm)
     else:
         group_a, group_b, attribute, thresh = gini_split(data, labels)
         node = BinaryNode((attribute, thresh))
-        node.left = CART(*group_a, height=height-1)
-        node.right = CART(*group_b, height=height-1)
+        node.left = CART(*group_a, height=height - 1)
+        node.right = CART(*group_b, height=height - 1)
 
     return node
 
@@ -113,48 +112,45 @@ def C4_5(data, labels, height=20):
     # check our stopping criteria
     classes = np.unique(labels)
 
-    if len(classes) == 1: # if all classes same, we can make decision
+    if len(classes) == 1:  # if all classes same, we can make decision
         node = BinaryNode(classes[0])
 
-    elif height <= 0: # max tree height, decide class who is most frequent
+    elif height <= 0:  # max tree height, decide class who is most frequent
         p = class_probabilities(data, labels)
         node = BinaryNode(classes[p.argmax()])
-        
+
     # Split dataset according to Information Gain (C4.5 Algorithm)
     else:
         group_a, group_b, attribute, thresh = information_gain_split(data, labels)
         node = BinaryNode((attribute, thresh))
-        node.left = C4_5(*group_a, height=height-1)
-        node.right = C4_5(*group_b, height=height-1)
+        node.left = C4_5(*group_a, height=height - 1)
+        node.right = C4_5(*group_b, height=height - 1)
 
     return node
 
 
 class DecisionTree:
-    classification_algos = {
-        'CART': CART,
-        'C4.5': C4_5
-    }
-    
-    def __init__(self, mode='classification', algo='CART'):
+    classification_algos = {"CART": CART, "C4.5": C4_5}
+
+    def __init__(self, mode="classification", algo="CART"):
         self._root = None
         self._mode = mode
         self._algo = algo
         pass
-    
+
     @property
     def root(self):
         return self._root
-    
+
     def fit(self, data, labels, height=20):
-        if self._mode == 'classification':
+        if self._mode == "classification":
             self._root = self.classification_algos[self._algo](data, labels, height)
 
     def __call__(self, data):
-        
-        #TODO: Inefficient looping
+
+        # TODO: Inefficient looping
         predicted_class = []
-        for i, point  in enumerate(data):
+        for i, point in enumerate(data):
             current_node = self._root
             while current_node.left is not None and current_node.right is not None:
                 attribute, thresh = current_node.value
