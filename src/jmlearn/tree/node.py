@@ -18,7 +18,7 @@ class BinaryNode:
         dot = view_tree(self)
         return dot
 
-
+    
 def view_tree(root):
     def add_edges(tree, dot=None):
         if dot is None:
